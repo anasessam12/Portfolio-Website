@@ -208,6 +208,10 @@
   height: 100%;
   overflow: hidden;
 }
+.what-content-in-expanded {
+  overflow-y: auto;
+  padding-right: 4px;
+}
 .what-content-in h5 {
   font-weight: 300;
   opacity: 0.5;
@@ -215,6 +219,27 @@
   letter-spacing: 1px;
   font-family: "Geist", sans-serif;
   margin-bottom: 5px;
+}
+.what-see-more {
+  display: inline-block;
+  margin: 6px 0 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accentColor);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.what-see-more:hover {
+  color: #fff;
+}
+.what-content-active .what-content-in-expanded {
+  max-height: 100%;
 }
 @keyframes whatBorders {
   80% {
