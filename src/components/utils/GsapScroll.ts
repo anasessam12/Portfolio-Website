@@ -1,39 +1,17 @@
-import * as THREE from "three";
 import gsap from "gsap";
-import type { HumanoidBones } from "../Character/utils/bones";
 
 /**
- * Scroll-driven camera / character choreography.
+ * Scroll-driven choreography for the landing hero.
  *
- * This version is rig- and prop-agnostic: it no longer references the old
- * model's desk/monitor/screen-light meshes or specific materials. The neck
- * (or head) is nudged during the scroll to keep the character "posing" along
- * with the camera move; everything is null-safe so a model without those bones
- * still works.
+ * The 3D character was removed, so the hero is now purely typographic: the
+ * copy lifts and fades as you leave the viewport while the glow backdrop
+ * parallaxes at a slower rate for depth.
  */
-export function setCharTimeline(
-  character: THREE.Object3D<THREE.Object3DEventMap> | null,
-  camera: THREE.PerspectiveCamera,
-  bones?: HumanoidBones | null,
-  visor?: THREE.Mesh | null
-) {
-  let intensity: number = 0;
-  setInterval(() => {
-    intensity = Math.random();
-  }, 200);
+export function setLandingTimeline() {
+  const landing = document.querySelector(".landing-section");
+  if (!landing) return;
 
-  // Subtle emissive pulse on the visor (if present) to act as a focal glow.
-  let visorMaterial: THREE.MeshStandardMaterial | null = null;
-  if (visor && (visor.material as THREE.MeshStandardMaterial)?.emissive) {
-    visorMaterial = visor.material as THREE.MeshStandardMaterial;
-    gsap.timeline({ repeat: -1, repeatRefresh: true }).to(visorMaterial, {
-      emissiveIntensity: () => 1.2 + intensity * 2.4,
-      duration: () => Math.random() * 0.6,
-      delay: () => Math.random() * 0.1,
-    });
-  }
-
-  const tl1 = gsap.timeline({
+  const tl = gsap.timeline({
     scrollTrigger: {
       trigger: ".landing-section",
       start: "top top",
@@ -42,126 +20,55 @@ export function setCharTimeline(
       invalidateOnRefresh: true,
     },
   });
-  const tl2 = gsap.timeline({
-    scrollTrigger: {
-      trigger: ".about-section",
-      start: "center 55%",
-      end: "bottom top",
-      scrub: true,
-      invalidateOnRefresh: true,
-    },
-  });
-  const tl3 = gsap.timeline({
-    scrollTrigger: {
-      trigger: ".whatIDO",
-      start: "top top",
-      end: "bottom top",
-      scrub: true,
-      invalidateOnRefresh: true,
-    },
-  });
 
-  // Prefer neck; fall back to head for the scroll-driven tilt.
-  const lookBone = bones?.neck || bones?.head || null;
+  tl.to(".landing-container", { y: "22%", duration: 1, ease: "none" }, 0)
+    .to(".landing-container", { opacity: 0, duration: 0.65 }, 0.15)
+    .to(".landing-backdrop", { y: "12%", scale: 1.08, duration: 1 }, 0)
+    .to(".landing-scroll", { opacity: 0, duration: 0.2 }, 0);
 
-  if (window.innerWidth > 1024) {
-    if (character) {
-      gsap.set(".character-model", { xPercent: -50, x: 0, left: "50%" });
-
-      tl1
-        .fromTo(character.rotation, { y: 0 }, { y: 0.7, duration: 1 }, 0)
-        .to(camera.position, { z: 22 }, 0)
-        .fromTo(
-          ".character-model",
-          { xPercent: -50, x: 0 },
-          { xPercent: -50, x: "-25%", duration: 1 },
-          0
-        )
-        .to(".landing-container", { opacity: 0, duration: 0.4 }, 0)
-        .to(".landing-container", { y: "40%", duration: 0.8 }, 0)
-        .fromTo(".about-me", { y: "-50%" }, { y: "0%" }, 0);
-
-      tl2
-        .to(
-          camera.position,
-          { z: 75, y: 8.4, duration: 6, delay: 2, ease: "power3.inOut" },
-          0
-        )
-        .to(".about-section", { y: "30%", duration: 6 }, 0)
-        .to(".about-section", { opacity: 0, delay: 3, duration: 2 }, 0)
-        .fromTo(
-          ".character-model",
-          { pointerEvents: "inherit" },
-          {
-            pointerEvents: "none",
-            xPercent: -50,
-            x: "-12%",
-            delay: 2,
-            duration: 5,
-            immediateRender: false,
-          },
-          0
-        )
-        .to(character.rotation, { y: 0.92, x: 0.12, delay: 3, duration: 3 }, 0);
-
-      if (lookBone) {
-        tl2.to(lookBone.rotation, { x: 0.6, delay: 2, duration: 3 }, 0);
-      }
-
-      if (visorMaterial) {
-        tl2.to(
-          visorMaterial,
-          { emissiveIntensity: 3.2, duration: 0.8, delay: 3.2 },
-          0
-        );
-      }
-
-      tl2
-        .fromTo(
-          ".what-box-in",
-          { display: "none" },
-          { display: "flex", duration: 0.1, delay: 6 },
-          0
-        )
-        .fromTo(
-          ".character-rim",
-          { opacity: 1, scaleX: 1.4 },
-          { opacity: 0, scale: 0, y: "-70%", duration: 5, delay: 2 },
-          0.3
-        );
-
-      tl3
-        .fromTo(
-          ".character-model",
-          { y: "0%" },
-          {
-            xPercent: -50,
-            y: "-100%",
-            duration: 4,
-            ease: "none",
-            delay: 1,
-            immediateRender: false,
-          },
-          0
-        )
-        .fromTo(".whatIDO", { y: 0 }, { y: "15%", duration: 2 }, 0)
-        .to(character.rotation, { x: -0.04, duration: 2, delay: 1 }, 0);
-    }
-  } else {
-    if (character) {
-      const tM2 = gsap.timeline({
+  const about = document.querySelector(".about-section");
+  if (about) {
+    gsap.fromTo(
+      ".about-me",
+      { y: 60, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        ease: "power2.out",
         scrollTrigger: {
-          trigger: ".what-box-in",
-          start: "top 70%",
-          end: "bottom top",
+          trigger: ".about-section",
+          start: "top 78%",
+          toggleActions: "play none none reverse",
+          invalidateOnRefresh: true,
         },
-      });
-      tM2.to(".what-box-in", { display: "flex", duration: 0.1, delay: 0 }, 0);
-    }
+      }
+    );
+  }
+
+  if (document.querySelector(".whatIDO") && window.innerWidth > 1024) {
+    gsap.fromTo(
+      ".what-box-in",
+      { y: 60, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".whatIDO",
+          start: "top 70%",
+          toggleActions: "play none none reverse",
+          invalidateOnRefresh: true,
+        },
+      }
+    );
   }
 }
 
 export function setAllTimeline() {
+  if (!document.querySelector(".career-section")) return;
+
   const careerTimeline = gsap.timeline({
     scrollTrigger: {
       trigger: ".career-section",
@@ -179,12 +86,7 @@ export function setAllTimeline() {
       0
     )
 
-    .fromTo(
-      ".career-timeline",
-      { opacity: 0 },
-      { opacity: 1, duration: 0.1 },
-      0
-    )
+    .fromTo(".career-timeline", { opacity: 0 }, { opacity: 1, duration: 0.1 }, 0)
     .fromTo(
       ".career-info-box",
       { opacity: 0 },

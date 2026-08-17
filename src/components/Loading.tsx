@@ -10,27 +10,31 @@ const Loading = ({ percent }: { percent: number }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  if (percent >= 100) {
-    setTimeout(() => {
-      setLoaded(true);
-      setTimeout(() => {
-        setIsLoaded(true);
-      }, 1000);
-    }, 600);
-  }
+  useEffect(() => {
+    if (percent < 100) return;
+    const timers: number[] = [];
+    timers.push(
+      window.setTimeout(() => {
+        setLoaded(true);
+        timers.push(window.setTimeout(() => setIsLoaded(true), 700));
+      }, 400)
+    );
+    return () => timers.forEach((id) => window.clearTimeout(id));
+  }, [percent]);
 
   useEffect(() => {
+    if (!isLoaded) return;
+    let timer: number | undefined;
     import("./utils/initialFX").then((module) => {
-      if (isLoaded) {
-        setClicked(true);
-        setTimeout(() => {
-          if (module.initialFX) {
-            module.initialFX();
-          }
-          setIsLoading(false);
-        }, 900);
-      }
+      setClicked(true);
+      timer = window.setTimeout(() => {
+        if (module.initialFX) {
+          module.initialFX();
+        }
+        setIsLoading(false);
+      }, 700);
     });
+    return () => window.clearTimeout(timer);
   }, [isLoaded]);
 
   function handleMouseMove(e: React.MouseEvent<HTMLElement>) {
@@ -62,10 +66,9 @@ const Loading = ({ percent }: { percent: number }) => {
       <div className="loading-screen">
         <div className="loading-marquee">
           <Marquee>
-            <span> Angular Frontend Developer</span>{" "}
-            <span>Angular Frontend Developer</span>
-            <span> Angular Frontend Developer</span>{" "}
-            <span>Angular Frontend Developer</span>
+            {[...Array(4)].map((_, index) => (
+              <span key={index}> {portfolio.title}</span>
+            ))}
           </Marquee>
         </div>
         <div
@@ -99,7 +102,7 @@ export const setProgress = (setLoading: (value: number) => void) => {
 
   let interval = setInterval(() => {
     if (percent <= 50) {
-      let rand = Math.round(Math.random() * 5);
+      const rand = Math.round(Math.random() * 5);
       percent = percent + rand;
       setLoading(percent);
     } else {

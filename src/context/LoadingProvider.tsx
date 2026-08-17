@@ -3,9 +3,10 @@ import {
   PropsWithChildren,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
-import Loading from "../components/Loading";
+import Loading, { setProgress } from "../components/Loading";
 
 interface LoadingType {
   isLoading: boolean;
@@ -27,6 +28,47 @@ export const LoadingProvider = ({ children }: PropsWithChildren) => {
     setIsLoading,
     setLoading,
   };
+
+  const bootedRef = useRef(false);
+
+  /**
+   * The loader used to be driven by the 3D character download. With the model
+   * gone we drive it from the document's own load event instead, and we still
+   * wait for ScrollSmoother to exist before completing so the intro
+   * animations always have a scroller to attach to.
+   */
+  useEffect(() => {
+    if (skipLoader || bootedRef.current) return;
+    bootedRef.current = true;
+
+    const progress = setProgress(setLoading);
+    let completing = false;
+
+    const finish = () => {
+      if (completing) return;
+      import("../components/Navbar").then(({ smoother }) => {
+        if (completing) return;
+        if (!smoother) {
+          window.setTimeout(finish, 100);
+          return;
+        }
+        completing = true;
+        progress.loaded();
+      });
+    };
+
+    const onReady = () => window.setTimeout(finish, 150);
+
+    if (document.readyState === "complete") {
+      onReady();
+    } else {
+      window.addEventListener("load", onReady, { once: true });
+    }
+
+    // Safety net: never leave a visitor stuck on the loader.
+    window.setTimeout(finish, 8000);
+  }, [skipLoader]);
+
   useEffect(() => {
     if (!skipLoader) return;
     let cancelled = false;

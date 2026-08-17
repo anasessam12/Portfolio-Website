@@ -1,10 +1,11 @@
 import { SplitText } from "gsap-trial/SplitText";
 import gsap from "gsap";
 import { smoother } from "../Navbar";
+import { setAllTimeline, setLandingTimeline } from "./GsapScroll";
 
 export function initialFX() {
   document.body.style.overflowY = "auto";
-  smoother.paused(false);
+  smoother?.paused(false);
   document.getElementsByTagName("main")[0].classList.add("main-active");
   gsap.to("body", {
     backgroundColor: "#0b080c",
@@ -12,7 +13,7 @@ export function initialFX() {
     delay: 1,
   });
 
-  var landingText = new SplitText(
+  const landingText = new SplitText(
     [".landing-info h3", ".landing-intro h2", ".landing-intro h1"],
     {
       type: "chars,lines",
@@ -33,9 +34,9 @@ export function initialFX() {
     }
   );
 
-  let TextProps = { type: "chars,lines", linesClass: "split-h2" };
+  const TextProps = { type: "chars,lines", linesClass: "split-h2" };
 
-  var landingText2 = new SplitText(".landing-h2-info", TextProps);
+  const landingText2 = new SplitText(".landing-h2-info", TextProps);
   gsap.fromTo(
     landingText2.chars,
     { opacity: 0, y: 80, filter: "blur(5px)" },
@@ -72,16 +73,32 @@ export function initialFX() {
     }
   );
 
-  var landingText3 = new SplitText(".landing-h2-info-1", TextProps);
-  var landingText4 = new SplitText(".landing-h2-1", TextProps);
-  var landingText5 = new SplitText(".landing-h2-2", TextProps);
+  gsap.fromTo(
+    [".landing-actions", ".landing-meta", ".landing-scroll"],
+    { opacity: 0, y: 24 },
+    {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      ease: "power2.out",
+      stagger: 0.12,
+      delay: 1.1,
+    }
+  );
+
+  const landingText3 = new SplitText(".landing-h2-info-1", TextProps);
+  const landingText4 = new SplitText(".landing-h2-1", TextProps);
+  const landingText5 = new SplitText(".landing-h2-2", TextProps);
 
   LoopText(landingText2, landingText3);
   LoopText(landingText4, landingText5);
+
+  setLandingTimeline();
+  setAllTimeline();
 }
 
 function LoopText(Text1: SplitText, Text2: SplitText) {
-  var tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });
+  const tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });
   const delay = 4;
   const delay2 = delay * 2 + 1;
 
