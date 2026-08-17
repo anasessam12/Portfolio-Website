@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import setCharacter from "./utils/character";
 import setLighting from "./utils/lighting";
@@ -7,21 +7,18 @@ import handleResize from "./utils/resizeUtils";
 import {
   handleMouseMove,
   handleTouchEnd,
-  handleHeadRotation,
   handleTouchMove,
 } from "./utils/mouseUtils";
 import setAnimations from "./utils/animationUtils";
 import { setProgress } from "../Loading";
-import { ScreenTextureController } from "./utils/screenTexture";
 import { createAmbientParticles } from "./utils/particles";
+import type { HumanoidBones } from "./utils/bones";
 
 const Scene = () => {
   const canvasDiv = useRef<HTMLDivElement | null>(null);
   const hoverDivRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef(new THREE.Scene());
   const { setLoading } = useLoading();
-
-  const [character, setChar] = useState<THREE.Object3D | null>(null);
 
   useEffect(() => {
     if (canvasDiv.current) {
@@ -49,54 +46,48 @@ const Scene = () => {
       camera.zoom = 1.1;
       camera.updateProjectionMatrix();
 
-      let headBone: THREE.Object3D | null = null;
-      let screenLight: any | null = null;
       let mixer: THREE.AnimationMixer;
+      let bones: HumanoidBones | null = null;
+      let applyHeadLook:
+        | ((rotX: number, rotY: number) => void)
+        | null = null;
+      let visor: THREE.Mesh | null = null;
+      let charScene: THREE.Object3D | null = null;
 
       const clock = new THREE.Clock();
 
-      // Setup dynamic animated screen texture and particles
-      const screenTextureCtrl = new ScreenTextureController();
+      // Ambient animated particles and cyberpunk studio lighting.
       const particlesCtrl = createAmbientParticles(scene);
       const light = setLighting(scene);
 
       const progress = setProgress((value) => setLoading(value));
-      const { loadCharacter } = setCharacter(
-        renderer,
-        scene,
-        camera,
-        screenTextureCtrl.texture
-      );
+      const { loadCharacter } = setCharacter(renderer, scene, camera);
 
       let animFrameId: number;
 
       loadCharacter()
-        .then((gltf) => {
-          if (gltf) {
-            const animations = setAnimations(gltf);
-            if (hoverDivRef.current) {
-              animations.hover(gltf, hoverDivRef.current);
-            }
-            mixer = animations.mixer;
-            const charScene = gltf.scene;
-            setChar(charScene);
-            scene.add(charScene);
-            headBone = charScene.getObjectByName("spine006") || null;
-            screenLight = charScene.getObjectByName("screenlight") || null;
+        .then((loaded) => {
+          charScene = loaded.object;
+          bones = loaded.bones;
+          visor = loaded.visor;
 
-            progress.loaded().then(() => {
-              setTimeout(() => {
-                light.turnOnLights();
-                animations.startIntro();
-              }, 2500);
-            });
+          const animations = setAnimations(loaded.gltf, bones);
+          // (Hover interactions were model-specific eyebrow controls; the new
+          // humanoid keeps click/visor feedback instead.)
+          void hoverDivRef;
+          mixer = animations.mixer;
+          applyHeadLook = animations.applyHeadLook;
 
-            window.addEventListener("resize", () =>
-              handleResize(renderer, camera, canvasDiv, charScene)
-            );
-          } else {
-            progress.loaded();
-          }
+          progress.loaded().then(() => {
+            setTimeout(() => {
+              light.turnOnLights();
+              animations.startIntro();
+            }, 1500);
+          });
+
+          window.addEventListener("resize", () =>
+            handleResize(renderer, camera, canvasDiv, charScene!)
+          );
         })
         .catch((err) => {
           console.error("Character failed to load:", err);
@@ -133,14 +124,17 @@ const Scene = () => {
         });
       };
 
-      // Interactive click feedback
+      // Interactive click feedback: pulse the visor glow.
       const onCanvasClick = () => {
-        if (!screenLight) return;
-        if (screenLight.material) {
-          screenLight.material.emissiveIntensity = 4.0;
+        if (!visor) return;
+        const mat = visor.material as THREE.MeshStandardMaterial;
+        if (mat?.emissive) {
+          const base = 1.6;
+          mat.emissiveIntensity = 4.5;
           setTimeout(() => {
-            if (screenLight && screenLight.material) {
-              screenLight.material.emissiveIntensity = 1.5;
+            if (visor) {
+              (visor.material as THREE.MeshStandardMaterial).emissiveIntensity =
+                base;
             }
           }, 300);
         }
@@ -154,16 +148,54 @@ const Scene = () => {
         landingDiv.addEventListener("click", onCanvasClick);
       }
 
+      // Local head-look target (mirrors mouseUtils.handleHeadRotation math,
+      // but applied via applyHeadLook so it composes over the idle clip).
+      const targetHeadRot = { x: 0, y: 0 };
+      const currentHeadRot = { x: 0, y: 0 };
+
+      const updateHeadLook = () => {
+        if (!applyHeadLook) return;
+        if (window.scrollY < 200) {
+          const maxRotation = Math.PI / 6;
+          targetHeadRot.y = mouse.x * maxRotation;
+          const minRotationX = -0.3;
+          const maxRotationX = 0.4;
+          if (mouse.y > minRotationX) {
+            if (mouse.y < maxRotationX) {
+              targetHeadRot.x = -mouse.y - 0.5 * maxRotation;
+            } else {
+              targetHeadRot.x = -maxRotationX - 0.5 * maxRotation;
+            }
+          } else {
+            targetHeadRot.x = -minRotationX - 0.5 * maxRotation;
+          }
+        } else if (window.innerWidth > 1024) {
+          targetHeadRot.x = -0.4;
+          targetHeadRot.y = -0.3;
+        }
+
+        currentHeadRot.x = THREE.MathUtils.lerp(
+          currentHeadRot.x,
+          targetHeadRot.x,
+          interpolation.x
+        );
+        currentHeadRot.y = THREE.MathUtils.lerp(
+          currentHeadRot.y,
+          targetHeadRot.y,
+          interpolation.y
+        );
+        applyHeadLook(currentHeadRot.x, currentHeadRot.y);
+      };
+
       const animate = () => {
         animFrameId = requestAnimationFrame(animate);
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
 
-        // Update animated code screen texture & particle galaxy
-        screenTextureCtrl.update(delta);
+        // Update animated particle galaxy.
         particlesCtrl.update(elapsed, mouse.x, mouse.y);
 
-        // Smooth subtle 3D scene tilt / parallax when at top
+        // Smooth subtle 3D scene tilt / parallax when at top.
         if (window.scrollY < 400) {
           scene.rotation.y = THREE.MathUtils.lerp(
             scene.rotation.y,
@@ -177,21 +209,11 @@ const Scene = () => {
           );
         }
 
-        if (headBone) {
-          handleHeadRotation(
-            headBone,
-            mouse.x,
-            mouse.y,
-            interpolation.x,
-            interpolation.y,
-            THREE.MathUtils.lerp
-          );
-          light.setPointLight(screenLight);
-        }
-
         if (mixer) {
           mixer.update(delta);
         }
+        // Apply AFTER mixer.update so mouse look wins over the idle clip.
+        updateHeadLook();
 
         renderer.render(scene, camera);
       };
@@ -202,14 +224,16 @@ const Scene = () => {
         cancelAnimationFrame(animFrameId);
         window.clearTimeout(debounce);
         scene.clear();
-        screenTextureCtrl.dispose();
         particlesCtrl.dispose();
         renderer.dispose();
 
         window.removeEventListener("resize", () =>
-          handleResize(renderer, camera, canvasDiv, character!)
+          handleResize(renderer, camera, canvasDiv, charScene!)
         );
-        if (canvasDiv.current && renderer.domElement.parentNode === canvasDiv.current) {
+        if (
+          canvasDiv.current &&
+          renderer.domElement.parentNode === canvasDiv.current
+        ) {
           canvasDiv.current.removeChild(renderer.domElement);
         }
         document.removeEventListener("mousemove", onMouseMove);

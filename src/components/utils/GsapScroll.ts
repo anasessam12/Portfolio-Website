@@ -1,14 +1,38 @@
 import * as THREE from "three";
 import gsap from "gsap";
+import type { HumanoidBones } from "../Character/utils/bones";
 
+/**
+ * Scroll-driven camera / character choreography.
+ *
+ * This version is rig- and prop-agnostic: it no longer references the old
+ * model's desk/monitor/screen-light meshes or specific materials. The neck
+ * (or head) is nudged during the scroll to keep the character "posing" along
+ * with the camera move; everything is null-safe so a model without those bones
+ * still works.
+ */
 export function setCharTimeline(
   character: THREE.Object3D<THREE.Object3DEventMap> | null,
-  camera: THREE.PerspectiveCamera
+  camera: THREE.PerspectiveCamera,
+  bones?: HumanoidBones | null,
+  visor?: THREE.Mesh | null
 ) {
   let intensity: number = 0;
   setInterval(() => {
     intensity = Math.random();
   }, 200);
+
+  // Subtle emissive pulse on the visor (if present) to act as a focal glow.
+  let visorMaterial: THREE.MeshStandardMaterial | null = null;
+  if (visor && (visor.material as THREE.MeshStandardMaterial)?.emissive) {
+    visorMaterial = visor.material as THREE.MeshStandardMaterial;
+    gsap.timeline({ repeat: -1, repeatRefresh: true }).to(visorMaterial, {
+      emissiveIntensity: () => 1.2 + intensity * 2.4,
+      duration: () => Math.random() * 0.6,
+      delay: () => Math.random() * 0.1,
+    });
+  }
+
   const tl1 = gsap.timeline({
     scrollTrigger: {
       trigger: ".landing-section",
@@ -36,35 +60,12 @@ export function setCharTimeline(
       invalidateOnRefresh: true,
     },
   });
-  let screenLight: any, monitor: any;
-  character?.children.forEach((object: any) => {
-    if (object.name === "Plane004") {
-      object.children.forEach((child: any) => {
-        child.material.transparent = true;
-        child.material.opacity = 0;
-        if (child.material.name === "Material.027") {
-          monitor = child;
-          child.material.color.set("#FFFFFF");
-        }
-      });
-    }
-    if (object.name === "screenlight") {
-      object.material.transparent = true;
-      object.material.opacity = 0;
-      object.material.emissive.set("#C8BFFF");
-      gsap.timeline({ repeat: -1, repeatRefresh: true }).to(object.material, {
-        emissiveIntensity: () => intensity * 8,
-        duration: () => Math.random() * 0.6,
-        delay: () => Math.random() * 0.1,
-      });
-      screenLight = object;
-    }
-  });
-  let neckBone = character?.getObjectByName("spine005");
+
+  // Prefer neck; fall back to head for the scroll-driven tilt.
+  const lookBone = bones?.neck || bones?.head || null;
+
   if (window.innerWidth > 1024) {
     if (character) {
-      // Center with xPercent; never put a non-zero x in another timeline's "from"
-      // (about ST at progress 0 was forcing x:-25% on the landing hero).
       gsap.set(".character-model", { xPercent: -50, x: 0, left: "50%" });
 
       tl1
@@ -101,20 +102,25 @@ export function setCharTimeline(
           },
           0
         )
-        .to(character.rotation, { y: 0.92, x: 0.12, delay: 3, duration: 3 }, 0)
-        .to(neckBone!.rotation, { x: 0.6, delay: 2, duration: 3 }, 0)
-        .to(monitor.material, { opacity: 1, duration: 0.8, delay: 3.2 }, 0)
-        .to(screenLight.material, { opacity: 1, duration: 0.8, delay: 4.5 }, 0)
+        .to(character.rotation, { y: 0.92, x: 0.12, delay: 3, duration: 3 }, 0);
+
+      if (lookBone) {
+        tl2.to(lookBone.rotation, { x: 0.6, delay: 2, duration: 3 }, 0);
+      }
+
+      if (visorMaterial) {
+        tl2.to(
+          visorMaterial,
+          { emissiveIntensity: 3.2, duration: 0.8, delay: 3.2 },
+          0
+        );
+      }
+
+      tl2
         .fromTo(
           ".what-box-in",
           { display: "none" },
           { display: "flex", duration: 0.1, delay: 6 },
-          0
-        )
-        .fromTo(
-          monitor.position,
-          { y: -10, z: 2 },
-          { y: 0, z: 0, delay: 1.5, duration: 3 },
           0
         )
         .fromTo(

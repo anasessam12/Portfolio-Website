@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { setCharTimeline, setAllTimeline } from "../../utils/GsapScroll";
+import { findHumanoidBones } from "./bones";
 
 export default function handleResize(
   renderer: THREE.WebGLRenderer,
@@ -21,6 +22,15 @@ export default function handleResize(
       trigger.kill();
     }
   });
-  setCharTimeline(character, camera);
+  // Re-derive bones on resize so scroll timelines can re-target the look bone.
+  const bones = findHumanoidBones(character);
+  let visor: THREE.Mesh | null = null;
+  character.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!visor && mesh.isMesh && mesh.name.toLowerCase().includes("visor")) {
+      visor = mesh;
+    }
+  });
+  setCharTimeline(character, camera, bones, visor);
   setAllTimeline();
 }

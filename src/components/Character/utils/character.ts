@@ -1,132 +1,131 @@
 import * as THREE from "three";
-import { DRACOLoader, GLTF, GLTFLoader } from "three-stdlib";
+import { GLTF, GLTFLoader } from "three-stdlib";
 import { setCharTimeline, setAllTimeline } from "../../utils/GsapScroll";
-import { decryptFile } from "./decrypt";
+import { findHumanoidBones, type HumanoidBones } from "./bones";
+
+const MODEL_URL = "/models/avatar.glb";
+
+/** Tunable framing for the loaded humanoid so it fits the landing camera. */
+const MODEL_SCALE = 6.4;
+const MODEL_Y = 3.3;
+
+export interface LoadedCharacter {
+  gltf: GLTF;
+  object: THREE.Object3D;
+  bones: HumanoidBones;
+  visor: THREE.Mesh | null;
+}
 
 const setCharacter = (
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
-  camera: THREE.PerspectiveCamera,
-  screenTexture?: THREE.CanvasTexture
+  camera: THREE.PerspectiveCamera
 ) => {
   const loader = new GLTFLoader();
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath("/draco/");
-  loader.setDRACOLoader(dracoLoader);
 
-  const loadCharacter = () => {
-    return new Promise<GLTF | null>(async (resolve, reject) => {
-      try {
-        const encryptedBlob = await decryptFile(
-          "/models/character.enc",
-          "Character3D#@"
-        );
-        const blobUrl = URL.createObjectURL(new Blob([encryptedBlob]));
+  const applyCyberpunkMaterials = (object: THREE.Object3D) => {
+    object.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
 
-        let character: THREE.Object3D;
-        loader.load(
-          blobUrl,
-          async (gltf) => {
-            character = gltf.scene;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.frustumCulled = true;
 
-            // Traverse and enhance materials and mesh properties
-            character.traverse((child: any) => {
-              if (child.isMesh) {
-                const mesh = child as THREE.Mesh;
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                mesh.frustumCulled = true;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : mesh.material
+        ? [mesh.material]
+        : [];
 
-                // Enhance materials for modern cyberpunk/developer aesthetic
-                if (Array.isArray(mesh.material)) {
-                  mesh.material.forEach((mat) => enhanceMaterial(mat, screenTexture));
-                } else if (mesh.material) {
-                  enhanceMaterial(mesh.material, screenTexture);
-                }
-              }
-            });
+      materials.forEach((mat) => {
+        const stdMat = mat as THREE.MeshStandardMaterial;
+        if (
+          !(stdMat as any).isMeshStandardMaterial &&
+          !(stdMat as any).isMeshPhysicalMaterial
+        )
+          return;
 
-            await renderer.compileAsync(character, camera, scene);
-            resolve(gltf);
-            setCharTimeline(character, camera);
+        const name = (stdMat.name || "").toLowerCase();
+
+        if (name.includes("visor")) {
+          // Glowing tactical visor — acts as the new "screen light" focal point.
+          stdMat.color = new THREE.Color(0x0a0118);
+          stdMat.emissive = new THREE.Color(0x38bdf8);
+          stdMat.emissiveIntensity = 1.6;
+          stdMat.roughness = 0.15;
+          stdMat.metalness = 0.6;
+        } else {
+          // Suit/body — push toward a dark, neon-lit cyber palette.
+          stdMat.envMapIntensity = 1.1;
+          if (stdMat.metalness < 0.5) stdMat.metalness = 0.55;
+          if (stdMat.roughness > 0.7) stdMat.roughness = 0.55;
+        }
+        stdMat.needsUpdate = true;
+      });
+    });
+  };
+
+  const findVisor = (object: THREE.Object3D): THREE.Mesh | null => {
+    let visor: THREE.Mesh | null = null;
+    object.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!visor && mesh.isMesh && mesh.name.toLowerCase().includes("visor")) {
+        visor = mesh;
+      }
+    });
+    return visor;
+  };
+
+  const loadCharacter = (): Promise<LoadedCharacter> => {
+    return new Promise((resolve, reject) => {
+      loader.load(
+        MODEL_URL,
+        async (gltf) => {
+          try {
+            const object = gltf.scene;
+
+            applyCyberpunkMaterials(object);
+            const visor = findVisor(object);
+
+            // Scale & ground the humanoid to match the scene's world units.
+            object.scale.setScalar(MODEL_SCALE);
+            object.rotation.y = 0;
+
+            // Compute bounds after scaling, then re-anchor so the feet sit on
+            // MODEL_Y and the model is centered on the X/Z plane.
+            const box = new THREE.Box3().setFromObject(object);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            object.position.set(
+              -center.x,
+              MODEL_Y - box.min.y,
+              -center.z
+            );
+
+            const bones = findHumanoidBones(object);
+
+            await renderer.compileAsync(object, camera, scene);
+            scene.add(object);
+
+            setCharTimeline(object, camera, bones, visor);
             setAllTimeline();
 
-            const footR = character.getObjectByName("footR");
-            if (footR) footR.position.y = 3.36;
-            const footL = character.getObjectByName("footL");
-            if (footL) footL.position.y = 3.36;
-
-            dracoLoader.dispose();
-          },
-          undefined,
-          (error) => {
-            console.error("Error loading GLTF model:", error);
-            reject(error);
+            resolve({ gltf, object, bones, visor });
+          } catch (err) {
+            reject(err);
           }
-        );
-      } catch (err) {
-        reject(err);
-        console.error(err);
-      }
+        },
+        undefined,
+        (error) => {
+          console.error("Error loading GLTF model:", error);
+          reject(error);
+        }
+      );
     });
   };
 
   return { loadCharacter };
 };
-
-function enhanceMaterial(mat: THREE.Material, screenTexture?: THREE.CanvasTexture) {
-  if (!mat) return;
-
-  // Enhance Standard / Physical Materials
-  if ((mat as any).isMeshStandardMaterial || (mat as any).isMeshPhysicalMaterial) {
-    const stdMat = mat as THREE.MeshStandardMaterial;
-
-    // Monitor screen material (Material.027)
-    if (stdMat.name === "Material.027" && screenTexture) {
-      stdMat.map = screenTexture;
-      stdMat.emissiveMap = screenTexture;
-      stdMat.emissive = new THREE.Color(0xffffff);
-      stdMat.emissiveIntensity = 1.2;
-      stdMat.roughness = 0.15;
-      stdMat.metalness = 0.05;
-      stdMat.toneMapped = true;
-      stdMat.needsUpdate = true;
-    }
-
-    // Keyboard keys (Material.025)
-    if (stdMat.name === "Material.025") {
-      stdMat.emissive = new THREE.Color(0x38bdf8);
-      stdMat.emissiveIntensity = 0.35;
-      stdMat.roughness = 0.4;
-      stdMat.metalness = 0.7;
-    }
-
-    // Laptop body (Material.024)
-    if (stdMat.name === "Material.024") {
-      stdMat.color = new THREE.Color(0x181326);
-      stdMat.roughness = 0.3;
-      stdMat.metalness = 0.85;
-    }
-
-    // Monitor Bezel (Material.028)
-    if (stdMat.name === "Material.028") {
-      stdMat.color = new THREE.Color(0x120e1e);
-      stdMat.roughness = 0.25;
-      stdMat.metalness = 0.9;
-    }
-
-    // Screen light mesh
-    if (stdMat.name === "screenlight.001") {
-      stdMat.emissive = new THREE.Color(0xc2a4ff);
-      stdMat.emissiveIntensity = 1.5;
-    }
-
-    // Character shirt / hair / skin enhancements
-    if (stdMat.name === "Material.030") { // Hair
-      stdMat.roughness = 0.6;
-      stdMat.metalness = 0.1;
-    }
-  }
-}
 
 export default setCharacter;

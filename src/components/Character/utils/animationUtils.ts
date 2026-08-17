@@ -1,118 +1,61 @@
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
-import { eyebrowBoneNames, typingBoneNames } from "../../../data/boneData";
+import type { HumanoidBones } from "./bones";
 
-const setAnimations = (gltf: GLTF) => {
-  let character = gltf.scene;
-  let mixer = new THREE.AnimationMixer(character);
-  if (gltf.animations) {
-    const introClip = gltf.animations.find(
-      (clip) => clip.name === "introAnimation"
-    );
-    const introAction = mixer.clipAction(introClip!);
-    introAction.setLoop(THREE.LoopOnce, 1);
-    introAction.clampWhenFinished = true;
-    introAction.play();
-    const clipNames = ["key1", "key2", "key5", "key6"];
-    clipNames.forEach((name) => {
-      const clip = THREE.AnimationClip.findByName(gltf.animations, name);
-      if (clip) {
-        const action = mixer?.clipAction(clip);
-        action!.play();
-        action!.timeScale = 1.2;
-      } else {
-        console.error(`Animation "${name}" not found`);
-      }
-    });
-    let typingAction: THREE.AnimationAction | null = null;
-    typingAction = createBoneAction(gltf, mixer, "typing", typingBoneNames);
-    if (typingAction) {
-      typingAction.enabled = true;
-      typingAction.play();
-      typingAction.timeScale = 1.2;
-    }
+/**
+ * Lightweight animation setup for a generic rigged humanoid.
+ *
+ * The previous model shipped desk-specific clips (typing, blink, eyebrow raise);
+ * those don't exist on a new rig, so we only:
+ *   - play the model's idle clip (with safe fallbacks), and
+ *   - re-apply the mouse-driven head pose every frame so it wins over the clip.
+ */
+const IDLE_CLIP_NAMES = ["Idle", "idle", "Idle_A", "Standing", "standing", "TPose"];
+
+const findClip = (gltf: GLTF, names: string[]): THREE.AnimationClip | null => {
+  if (!gltf.animations || gltf.animations.length === 0) return null;
+  for (const name of names) {
+    const clip = THREE.AnimationClip.findByName(gltf.animations, name);
+    if (clip) return clip;
   }
+  return gltf.animations[0];
+};
+
+const setAnimations = (gltf: GLTF, bones: HumanoidBones) => {
+  const character = gltf.scene;
+  const mixer = new THREE.AnimationMixer(character);
+
+  const idleClip = findClip(gltf, IDLE_CLIP_NAMES);
+  let idleAction: THREE.AnimationAction | null = null;
+  if (idleClip) {
+    idleAction = mixer.clipAction(idleClip);
+    idleAction.play();
+  } else {
+    console.warn("No idle animation found in GLTF file.");
+  }
+
+  // Snapshot of the bind-pose head rotation so we can layer mouse look on top.
+  const headBaseRotation = bones.head
+    ? bones.head.rotation.clone()
+    : new THREE.Euler();
+
   function startIntro() {
-    const introClip = gltf.animations.find(
-      (clip) => clip.name === "introAnimation"
-    );
-    const introAction = mixer.clipAction(introClip!);
-    introAction.clampWhenFinished = true;
-    introAction.reset().play();
-    setTimeout(() => {
-      const blink = gltf.animations.find((clip) => clip.name === "Blink");
-      mixer.clipAction(blink!).play().fadeIn(0.5);
-    }, 2500);
-  }
-  function hover(gltf: GLTF, hoverDiv: HTMLDivElement) {
-    let eyeBrowUpAction = createBoneAction(
-      gltf,
-      mixer,
-      "browup",
-      eyebrowBoneNames
-    );
-    let isHovering = false;
-    if (eyeBrowUpAction) {
-      eyeBrowUpAction.setLoop(THREE.LoopOnce, 1);
-      eyeBrowUpAction.clampWhenFinished = true;
-      eyeBrowUpAction.enabled = true;
+    if (idleAction) {
+      idleAction.reset().fadeIn(0.8).play();
     }
-    const onHoverFace = () => {
-      if (eyeBrowUpAction && !isHovering) {
-        isHovering = true;
-        eyeBrowUpAction.reset();
-        eyeBrowUpAction.enabled = true;
-        eyeBrowUpAction.setEffectiveWeight(4);
-        eyeBrowUpAction.fadeIn(0.5).play();
-      }
-    };
-    const onLeaveFace = () => {
-      if (eyeBrowUpAction && isHovering) {
-        isHovering = false;
-        eyeBrowUpAction.fadeOut(0.6);
-      }
-    };
-    if (!hoverDiv) return;
-    hoverDiv.addEventListener("mouseenter", onHoverFace);
-    hoverDiv.addEventListener("mouseleave", onLeaveFace);
-    return () => {
-      hoverDiv.removeEventListener("mouseenter", onHoverFace);
-      hoverDiv.removeEventListener("mouseleave", onLeaveFace);
-    };
-  }
-  return { mixer, startIntro, hover };
-};
-
-const createBoneAction = (
-  gltf: GLTF,
-  mixer: THREE.AnimationMixer,
-  clip: string,
-  boneNames: string[]
-): THREE.AnimationAction | null => {
-  const AnimationClip = THREE.AnimationClip.findByName(gltf.animations, clip);
-  if (!AnimationClip) {
-    console.error(`Animation "${clip}" not found in GLTF file.`);
-    return null;
   }
 
-  const filteredClip = filterAnimationTracks(AnimationClip, boneNames);
+  /**
+   * Re-applies head look on top of the idle clip. Call AFTER mixer.update().
+   * Returns the desired head local rotation (x, y) in radians.
+   */
+  function applyHeadLook(rotX: number, rotY: number) {
+    if (!bones.head) return;
+    bones.head.rotation.x = headBaseRotation.x + rotX;
+    bones.head.rotation.y = headBaseRotation.y + rotY;
+  }
 
-  return mixer.clipAction(filteredClip);
-};
-
-const filterAnimationTracks = (
-  clip: THREE.AnimationClip,
-  boneNames: string[]
-): THREE.AnimationClip => {
-  const filteredTracks = clip.tracks.filter((track) =>
-    boneNames.some((boneName) => track.name.includes(boneName))
-  );
-
-  return new THREE.AnimationClip(
-    clip.name + "_filtered",
-    clip.duration,
-    filteredTracks
-  );
+  return { mixer, startIntro, hover: () => () => {}, applyHeadLook };
 };
 
 export default setAnimations;

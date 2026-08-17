@@ -24,15 +24,16 @@ const setLighting = (scene: THREE.Scene) => {
   fillLight.position.set(-3, 6, 8);
   scene.add(fillLight);
 
-  // Screen/Monitor Glow Point Light
+  // Accent point light near the character's head/visor (replaces the old
+  // monitor screen glow; provides a cyan neon uplight on the face).
   const pointLight = new THREE.PointLight(0x818cf8, 0, 80, 2.5);
   pointLight.position.set(0, 11.8, 4.5);
   scene.add(pointLight);
 
-  // Keyboard Underglow Light
-  const keyboardLight = new THREE.PointLight(0xa855f7, 0, 20, 2);
-  keyboardLight.position.set(0, 9.5, 3.5);
-  scene.add(keyboardLight);
+  // Neon underglow at the character's feet (replaces the old keyboard glow).
+  const underglow = new THREE.PointLight(0xa855f7, 0, 20, 2);
+  underglow.position.set(0, 4.0, 3.5);
+  scene.add(underglow);
 
   // HDR Environment Mapping
   new RGBELoader()
@@ -43,19 +44,6 @@ const setLighting = (scene: THREE.Scene) => {
       scene.environmentIntensity = 0;
       scene.environmentRotation.set(5.76, 85.85, 1);
     });
-
-  function setPointLight(screenLight: any) {
-    if (screenLight && screenLight.material && screenLight.material.opacity > 0.6) {
-      pointLight.intensity = Math.max(
-        0.8,
-        (screenLight.material.emissiveIntensity || 1) * 8
-      );
-      keyboardLight.intensity = 1.2;
-    } else {
-      pointLight.intensity = 0.4;
-      keyboardLight.intensity = 0.6;
-    }
-  }
 
   const duration = 2.2;
   const ease = "power2.inOut";
@@ -81,8 +69,13 @@ const setLighting = (scene: THREE.Scene) => {
       duration: duration,
       ease: ease,
     });
-    gsap.to(keyboardLight, {
-      intensity: 1.4,
+    gsap.to(pointLight, {
+      intensity: 1.2,
+      duration: duration,
+      ease: ease,
+    });
+    gsap.to(underglow, {
+      intensity: 1.6,
       duration: duration,
       ease: ease,
     });
@@ -94,7 +87,7 @@ const setLighting = (scene: THREE.Scene) => {
     });
   }
 
-  return { setPointLight, turnOnLights };
+  return { turnOnLights };
 };
 
 export default setLighting;
