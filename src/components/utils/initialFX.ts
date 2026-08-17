@@ -1,4 +1,4 @@
-import { SplitText } from "gsap-trial/SplitText";
+import { SplitText } from "gsap/SplitText";
 import gsap from "gsap";
 import { smoother } from "../Navbar";
 
@@ -70,6 +70,36 @@ export function initialFX() {
       ease: "power1.inOut",
       delay: 0.1,
     }
+  );
+
+  // New hero furniture: orbit rings, badge, CTAs, meta and scroll hint.
+  gsap.fromTo(
+    ".hero-orbits",
+    { autoAlpha: 0, scale: 0.86 },
+    {
+      autoAlpha: 1,
+      scale: 1,
+      duration: 1.9,
+      ease: "power2.out",
+      delay: 0.9,
+    }
+  );
+  gsap.fromTo(
+    [".landing-badge", ".landing-cta-row", ".landing-meta"],
+    { autoAlpha: 0, y: 26 },
+    {
+      autoAlpha: 1,
+      y: 0,
+      duration: 1,
+      ease: "power3.out",
+      stagger: 0.12,
+      delay: 1.05,
+    }
+  );
+  gsap.fromTo(
+    ".landing-scroll-hint",
+    { autoAlpha: 0 },
+    { autoAlpha: 1, duration: 1.4, ease: "power2.out", delay: 1.9 }
   );
 
   var landingText3 = new SplitText(".landing-h2-info-1", TextProps);

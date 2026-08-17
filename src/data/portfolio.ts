@@ -7,6 +7,7 @@ export const portfolio = {
   brand: "ANAS",
   title: "Angular Frontend Developer",
   roles: ["Angular Developer", "Software Engineer"] as const,
+  availability: "Open to new opportunities",
   location: "El-Sheikh Zayed City, Giza, Egypt",
   email: "anasessam211@gmail.com",
   phone: "+20 109 420 1827",
@@ -18,6 +19,19 @@ export const portfolio = {
   resumeUrl: "/Anas-Essam-Mahmoud-CV.pdf",
   about:
     "Angular Frontend Developer specializing in bilingual Arabic/English web applications across government, ERP/HR SaaS, ecommerce, and corporate domains. I ship production apps end-to-end — admin and client portals with SSO, offline-first Electron desktop apps, reusable published libraries, and company design systems — working closely with backend, design, and QA to deliver polished, accessible RTL interfaces.",
+  highlights: [
+    "Bilingual RTL / i18n",
+    "SSO & RBAC",
+    "Offline-first Electron",
+    "Design Systems",
+    "Realtime SignalR",
+  ],
+  stats: [
+    { value: 3, suffix: "+", label: "Years of Experience" },
+    { value: 6, suffix: "+", label: "Production Apps Shipped" },
+    { value: 2, suffix: "+", label: "Published Libraries" },
+    { value: 1, suffix: "", label: "Company Design System" },
+  ],
   whatIDo: [
     {
       title: "BUILD",

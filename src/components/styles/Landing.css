@@ -179,9 +179,197 @@
   font-family: "Geist", sans-serif;
 }
 
-/* .landing-intro h1 span {
-   font-weight: 200; 
-} */
+/* --- Hero: 3D orbit backdrop ------------------------------------------ */
+.hero-orbits {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: min(96vw, 1100px);
+  height: 84%;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-orbits-inner {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Hero: availability badge ------------------------------------------ */
+.landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(234, 229, 236, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(196, 129, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 8px 15px;
+  border-radius: 999px;
+  margin-bottom: 20px;
+}
+.landing-badge-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #7cffb2;
+  box-shadow: 0 0 9px rgba(124, 255, 178, 0.9);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+@keyframes badgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.72);
+    opacity: 0.62;
+  }
+}
+
+/* --- Hero: name gradient ----------------------------------------------- */
+.landing-intro h1 span {
+  background: linear-gradient(
+    110deg,
+    #eae5ec 5%,
+    var(--accentColor) 55%,
+    #fb8dff 95%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* --- Hero: call-to-action buttons -------------------------------------- */
+.landing-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  margin-top: 30px;
+}
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 13px 23px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.45, 0, 0.2, 1),
+    box-shadow 0.35s ease, border-color 0.35s ease, color 0.35s ease,
+    background 0.35s ease;
+}
+.landing-cta svg {
+  font-size: 15px;
+  transition: transform 0.35s ease;
+}
+.landing-cta-primary,
+.landing-cta-primary:hover {
+  color: #12091f;
+}
+.landing-cta-primary {
+  background: linear-gradient(135deg, #ecd9ff, var(--accentColor));
+  box-shadow: 0 6px 26px rgba(194, 164, 255, 0.26);
+}
+.landing-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 36px rgba(194, 164, 255, 0.44);
+  background: linear-gradient(135deg, #f3e7ff, #cfb1ff);
+}
+.landing-cta-primary:hover svg {
+  transform: translateY(2.5px);
+}
+.landing-cta-ghost {
+  color: rgba(234, 229, 236, 0.92);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.landing-cta-ghost:hover {
+  border-color: var(--accentColor);
+  color: var(--accentColor);
+  transform: translateY(-2px);
+  background: rgba(196, 129, 255, 0.07);
+}
+.landing-cta-ghost:hover svg {
+  transform: translate(2px, -2px);
+}
+
+/* --- Hero: location meta line ------------------------------------------ */
+.landing-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 26px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(234, 229, 236, 0.52);
+}
+.landing-meta svg {
+  color: var(--accentColor);
+  font-size: 15px;
+}
+
+/* --- Hero: scroll hint -------------------------------------------------- */
+.landing-scroll-hint {
+  display: none;
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 12;
+  align-items: center;
+  gap: 12px;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: rgba(234, 229, 236, 0.5);
+  pointer-events: none;
+}
+.landing-scroll-line {
+  display: block;
+  position: relative;
+  width: 1px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.landing-scroll-dot {
+  position: absolute;
+  left: 0;
+  top: -12px;
+  width: 1px;
+  height: 10px;
+  background: var(--accentColor);
+  animation: scrollDot 2.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes scrollDot {
+  0% {
+    top: -12px;
+  }
+  55%,
+  100% {
+    top: 46px;
+  }
+}
+
 
 .landing-info {
   position: absolute;
@@ -301,6 +489,16 @@ h2.landing-info-h2 {
   .character-model::after,
   .character-model::before {
     display: none;
+  }
+  .landing-scroll-hint {
+    display: flex;
+  }
+  .landing-badge {
+    font-size: 11px;
+    margin-bottom: 24px;
+  }
+  .landing-meta {
+    font-size: 11.5px;
   }
   .landing-intro {
     top: 50%;
