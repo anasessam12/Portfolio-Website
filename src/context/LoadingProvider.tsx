@@ -16,20 +16,44 @@ interface LoadingType {
 export const LoadingContext = createContext<LoadingType | null>(null);
 
 export const LoadingProvider = ({ children }: PropsWithChildren) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [loading, setLoading] = useState(0);
+  const skipLoader =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("debugScroll");
+  const [isLoading, setIsLoading] = useState(!skipLoader);
+  const [loading, setLoading] = useState(skipLoader ? 100 : 0);
 
   const value = {
     isLoading,
     setIsLoading,
     setLoading,
   };
-  useEffect(() => {}, [loading]);
+  useEffect(() => {
+    if (!skipLoader) return;
+    let cancelled = false;
+    const boot = () => {
+      import("../components/utils/initialFX").then(async (mod) => {
+        const { smoother } = await import("../components/Navbar");
+        if (cancelled) return;
+        if (!smoother) {
+          window.setTimeout(boot, 100);
+          return;
+        }
+        mod.initialFX?.();
+      });
+    };
+    const id = window.setTimeout(boot, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
+  }, [skipLoader]);
 
   return (
     <LoadingContext.Provider value={value as LoadingType}>
       {isLoading && <Loading percent={loading} />}
-      <main className="main-body">{children}</main>
+      <main className={`main-body ${skipLoader ? "main-active" : ""}`}>
+        {children}
+      </main>
     </LoadingContext.Provider>
   );
 };

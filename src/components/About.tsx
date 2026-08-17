@@ -1,15 +1,12 @@
 import "./styles/About.css";
+import { portfolio } from "../data/portfolio";
 
 const About = () => {
   return (
     <div className="about-section" id="about">
       <div className="about-me">
         <h3 className="title">About Me</h3>
-        <p className="para">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Hic quis
-          dolores numquam iusto Ratione earum ducimus autem id iure pariatur
-          dolorum quae maiores.
-        </p>
+        <p className="para">{portfolio.about}</p>
       </div>
     </div>
   );
