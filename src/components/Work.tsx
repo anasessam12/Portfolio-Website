@@ -4,6 +4,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { portfolio } from "../data/portfolio";
+import { useProject } from "../context/ProjectContext";
+import { MdArrowOutward } from "react-icons/md";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -57,6 +59,8 @@ function resetWorkPin() {
 }
 
 const Work = () => {
+  const { openProject } = useProject();
+
   useGSAP(() => {
     let timeline: gsap.core.Timeline | null = null;
 
@@ -112,18 +116,33 @@ const Work = () => {
                 <div className="work-title">
                   <h3>0{index + 1}</h3>
 
-                  <div>
+                  <div
+                    style={{ cursor: "pointer" }}
+                    onClick={() => openProject(project.slug)}
+                  >
                     <h4>{project.title}</h4>
                     <p>{project.category}</p>
                   </div>
                 </div>
                 <h4>Tools and features</h4>
                 <p>{project.tools}</p>
+
+                {/* Dedicated Case Study / Details Button */}
+                <button
+                  type="button"
+                  className="work-explore-btn"
+                  onClick={() => openProject(project.slug)}
+                  data-cursor="disable"
+                >
+                  <span>View Project Details</span>
+                  <MdArrowOutward />
+                </button>
               </div>
               <WorkImage
                 image={project.image}
                 alt={project.title}
                 link={project.link}
+                onOpen={() => openProject(project.slug)}
               />
             </div>
           ))}

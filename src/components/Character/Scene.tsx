@@ -12,6 +12,8 @@ import {
 } from "./utils/mouseUtils";
 import setAnimations from "./utils/animationUtils";
 import { setProgress } from "../Loading";
+import { ScreenTextureController } from "./utils/screenTexture";
+import { createAmbientParticles } from "./utils/particles";
 
 const Scene = () => {
   const canvasDiv = useRef<HTMLDivElement | null>(null);
@@ -20,21 +22,25 @@ const Scene = () => {
   const { setLoading } = useLoading();
 
   const [character, setChar] = useState<THREE.Object3D | null>(null);
+
   useEffect(() => {
     if (canvasDiv.current) {
-      let rect = canvasDiv.current.getBoundingClientRect();
-      let container = { width: rect.width, height: rect.height };
+      const rect = canvasDiv.current.getBoundingClientRect();
+      const container = { width: rect.width, height: rect.height };
       const aspect = container.width / container.height;
       const scene = sceneRef.current;
 
       const renderer = new THREE.WebGLRenderer({
         alpha: true,
         antialias: true,
+        powerPreference: "high-performance",
       });
       renderer.setSize(container.width, container.height);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1;
+      renderer.toneMappingExposure = 1.15;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       canvasDiv.current.appendChild(renderer.domElement);
 
       const camera = new THREE.PerspectiveCamera(14.5, aspect, 0.1, 1000);
@@ -49,29 +55,44 @@ const Scene = () => {
 
       const clock = new THREE.Clock();
 
+      // Setup dynamic animated screen texture and particles
+      const screenTextureCtrl = new ScreenTextureController();
+      const particlesCtrl = createAmbientParticles(scene);
       const light = setLighting(scene);
-      let progress = setProgress((value) => setLoading(value));
-      const { loadCharacter } = setCharacter(renderer, scene, camera);
+
+      const progress = setProgress((value) => setLoading(value));
+      const { loadCharacter } = setCharacter(
+        renderer,
+        scene,
+        camera,
+        screenTextureCtrl.texture
+      );
+
+      let animFrameId: number;
 
       loadCharacter()
         .then((gltf) => {
           if (gltf) {
             const animations = setAnimations(gltf);
-            hoverDivRef.current && animations.hover(gltf, hoverDivRef.current);
+            if (hoverDivRef.current) {
+              animations.hover(gltf, hoverDivRef.current);
+            }
             mixer = animations.mixer;
-            let character = gltf.scene;
-            setChar(character);
-            scene.add(character);
-            headBone = character.getObjectByName("spine006") || null;
-            screenLight = character.getObjectByName("screenlight") || null;
+            const charScene = gltf.scene;
+            setChar(charScene);
+            scene.add(charScene);
+            headBone = charScene.getObjectByName("spine006") || null;
+            screenLight = charScene.getObjectByName("screenlight") || null;
+
             progress.loaded().then(() => {
               setTimeout(() => {
                 light.turnOnLights();
                 animations.startIntro();
               }, 2500);
             });
+
             window.addEventListener("resize", () =>
-              handleResize(renderer, camera, canvasDiv, character)
+              handleResize(renderer, camera, canvasDiv, charScene)
             );
           } else {
             progress.loaded();
@@ -82,18 +103,25 @@ const Scene = () => {
           progress.loaded();
         });
 
-      let mouse = { x: 0, y: 0 },
-        interpolation = { x: 0.1, y: 0.2 };
+      let mouse = { x: 0, y: 0 };
+      let interpolation = { x: 0.1, y: 0.2 };
 
       const onMouseMove = (event: MouseEvent) => {
-        handleMouseMove(event, (x, y) => (mouse = { x, y }));
+        handleMouseMove(event, (x, y) => {
+          mouse.x = x;
+          mouse.y = y;
+        });
       };
+
       let debounce: number | undefined;
       const onTouchStart = (event: TouchEvent) => {
         const element = event.target as HTMLElement;
-        debounce = setTimeout(() => {
+        debounce = window.setTimeout(() => {
           element?.addEventListener("touchmove", (e: TouchEvent) =>
-            handleTouchMove(e, (x, y) => (mouse = { x, y }))
+            handleTouchMove(e, (x, y) => {
+              mouse.x = x;
+              mouse.y = y;
+            })
           );
         }, 200);
       };
@@ -105,16 +133,50 @@ const Scene = () => {
         });
       };
 
-      document.addEventListener("mousemove", (event) => {
-        onMouseMove(event);
-      });
+      // Interactive click feedback
+      const onCanvasClick = () => {
+        if (!screenLight) return;
+        if (screenLight.material) {
+          screenLight.material.emissiveIntensity = 4.0;
+          setTimeout(() => {
+            if (screenLight && screenLight.material) {
+              screenLight.material.emissiveIntensity = 1.5;
+            }
+          }, 300);
+        }
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
       const landingDiv = document.getElementById("landingDiv");
       if (landingDiv) {
         landingDiv.addEventListener("touchstart", onTouchStart);
         landingDiv.addEventListener("touchend", onTouchEnd);
+        landingDiv.addEventListener("click", onCanvasClick);
       }
+
       const animate = () => {
-        requestAnimationFrame(animate);
+        animFrameId = requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
+        // Update animated code screen texture & particle galaxy
+        screenTextureCtrl.update(delta);
+        particlesCtrl.update(elapsed, mouse.x, mouse.y);
+
+        // Smooth subtle 3D scene tilt / parallax when at top
+        if (window.scrollY < 400) {
+          scene.rotation.y = THREE.MathUtils.lerp(
+            scene.rotation.y,
+            mouse.x * 0.05,
+            0.04
+          );
+          scene.rotation.x = THREE.MathUtils.lerp(
+            scene.rotation.x,
+            -mouse.y * 0.025,
+            0.04
+          );
+        }
+
         if (headBone) {
           handleHeadRotation(
             headBone,
@@ -126,27 +188,35 @@ const Scene = () => {
           );
           light.setPointLight(screenLight);
         }
-        const delta = clock.getDelta();
+
         if (mixer) {
           mixer.update(delta);
         }
+
         renderer.render(scene, camera);
       };
+
       animate();
+
       return () => {
-        clearTimeout(debounce);
+        cancelAnimationFrame(animFrameId);
+        window.clearTimeout(debounce);
         scene.clear();
+        screenTextureCtrl.dispose();
+        particlesCtrl.dispose();
         renderer.dispose();
+
         window.removeEventListener("resize", () =>
           handleResize(renderer, camera, canvasDiv, character!)
         );
-        if (canvasDiv.current) {
+        if (canvasDiv.current && renderer.domElement.parentNode === canvasDiv.current) {
           canvasDiv.current.removeChild(renderer.domElement);
         }
+        document.removeEventListener("mousemove", onMouseMove);
         if (landingDiv) {
-          document.removeEventListener("mousemove", onMouseMove);
           landingDiv.removeEventListener("touchstart", onTouchStart);
           landingDiv.removeEventListener("touchend", onTouchEnd);
+          landingDiv.removeEventListener("click", onCanvasClick);
         }
       };
     }

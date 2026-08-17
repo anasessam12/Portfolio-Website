@@ -105,42 +105,49 @@ export const portfolio = {
   projects: [
     {
       title: "APA Voting Desktop",
+      slug: "apa-voting-desktop",
       category: "Electron · Government",
       tools: "Angular 21, Nx, Electron 41, Vitest, Playwright",
       image: "/images/placeholder.webp",
     },
     {
       title: "APA Government Platform",
+      slug: "apa-government-platform",
       category: "Admin · Client · SSO",
       tools: "Angular 17/18, NgRx, SignalR, TanStack Query, SSR",
       image: "/images/placeholder.webp",
     },
     {
       title: "Staff Affairs & Elections",
+      slug: "staff-affairs-elections",
       category: "Publishable Libraries",
       tools: "Angular 17, ng-packagr, NgRx Store/Effects",
       image: "/images/placeholder.webp",
     },
     {
       title: "C4R UI Kit",
+      slug: "c4r-ui-kit",
       category: "Design System",
       tools: "Angular 21, Storybook 10, Design Tokens, Jest, AXE",
       image: "/images/placeholder.webp",
     },
     {
       title: "Time Attendance — C4R",
+      slug: "time-attendance-c4r",
       category: "HR SaaS",
       tools: "Angular 20, Nx, NgRx, Jest, RTL / i18n",
       image: "/images/placeholder.webp",
     },
     {
       title: "Rafraf · EGO · Project-EGY",
+      slug: "rafraf-ego-projectegy",
       category: "Ecommerce · Classifieds",
       tools: "Angular, PrimeNG, Angular Material",
       image: "/images/placeholder.webp",
     },
   ] as {
     title: string;
+    slug: string;
     category: string;
     tools: string;
     image: string;
