@@ -1,73 +1,220 @@
+/* ==========================================================================
+   About — intro paragraph + quick facts / highlights
+   ========================================================================== */
+
 .about-section {
   display: flex;
   align-items: center;
-  justify-content: left;
-  place-items: center;
+  justify-content: center;
   position: relative;
-  opacity: 1;
-  height: auto;
   width: var(--cWidth);
+  max-width: 1280px;
   margin: auto;
+  padding: 90px 0;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
+
 .about-me {
-  padding: 50px 0px;
-  padding-bottom: 0;
-  width: 500px;
-  max-width: calc(100% - 15px);
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  width: 100%;
 }
-.about-me h3 {
-  font-size: 25px;
+
+/* ---------- main column ---------- */
+
+.about-head {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 26px;
+}
+
+.about-head .title {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 30px);
   text-transform: uppercase;
   letter-spacing: 7px;
   font-weight: 400;
   color: var(--accentColor);
+  white-space: nowrap;
 }
 
-.about-me p {
-  font-size: 33px;
-  font-weight: 600;
-  line-height: 36px;
-  letter-spacing: 1px;
+.about-head-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, rgba(194, 164, 255, 0.5), transparent);
 }
 
-@media only screen and (min-width: 600px) {
-  .about-section {
-    justify-content: center;
-  }
+.about-me .para {
+  margin: 0;
+  font-size: clamp(20px, 2.1vw, 30px);
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.4px;
+  color: #efeaf4;
 }
-@media only screen and (min-width: 768px) {
+
+/* ---------- highlights ---------- */
+
+.about-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 34px;
+}
+
+.about-highlight {
+  padding: 8px 16px;
+  border: 1px solid rgba(194, 164, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(194, 164, 255, 0.06);
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  color: #d5cbe0;
+  transition: border-color 0.25s ease, background-color 0.25s ease,
+    color 0.25s ease, transform 0.25s ease;
+}
+
+.about-highlight:hover {
+  border-color: rgba(194, 164, 255, 0.65);
+  background: rgba(194, 164, 255, 0.14);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* ---------- facts grid ---------- */
+
+.about-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-self: center;
+  width: 100%;
+}
+
+.about-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(234, 229, 236, 0.1);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.015)
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.3s ease, transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.about-fact:hover {
+  border-color: rgba(194, 164, 255, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -22px rgba(168, 85, 247, 0.55);
+}
+
+.about-fact-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: rgba(194, 164, 255, 0.12);
+  color: var(--accentColor);
+  font-size: 17px;
+}
+
+.about-fact-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.about-fact-body strong {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: #8f8598;
+}
+
+.about-fact-body span {
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: #efeaf4;
+  word-break: break-word;
+}
+
+/* ---------- cta ---------- */
+
+.about-cta {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.about-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--accentColor);
+  transition: color 0.25s ease;
+}
+
+.about-cta a:hover {
+  color: #fff;
+}
+
+/* ---------- responsive ---------- */
+
+@media only screen and (min-width: 900px) {
   .about-me {
-    width: 500px;
-    max-width: calc(100% - 70px);
-    transform: translateY(0%);
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 72px;
+    align-items: center;
   }
-  .about-section {
-    opacity: 1;
-  }
-}
-@media only screen and (min-width: 1025px) {
-  .about-section {
-    width: var(--cWidth);
-    justify-content: center;
-    max-width: 1920px;
-    height: var(--vh);
-    padding: 0px;
-    opacity: 1;
-  }
-  .about-me {
-    padding: 0px;
-    width: 68%;
-    max-width: 1040px;
-    text-align: center;
-  }
-  .about-me p {
-    font-size: 1.9vw;
-    line-height: 2.3vw;
+
+  .about-facts {
+    align-self: center;
   }
 }
+
+@media only screen and (max-width: 899px) {
+  .about-section {
+    padding: 70px 0;
+    min-height: auto;
+  }
+  .about-facts {
+    grid-template-columns: 1fr;
+    align-self: stretch;
+  }
+  .about-cta {
+    grid-column: auto;
+  }
+}
+
 @media only screen and (min-width: 1950px) {
-  .about-me p {
-    font-size: 2.5rem;
-    line-height: 2.7rem;
+  .about-me .para {
+    font-size: 2.2rem;
+    line-height: 2.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-fact,
+  .about-highlight {
+    transition: none;
   }
 }

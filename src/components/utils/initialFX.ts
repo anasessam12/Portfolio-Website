@@ -74,7 +74,7 @@ export function initialFX() {
   );
 
   gsap.fromTo(
-    [".landing-actions", ".landing-meta", ".landing-scroll"],
+    [".landing-actions", ".landing-stats", ".landing-meta", ".landing-scroll"],
     { opacity: 0, y: 24 },
     {
       opacity: 1,
@@ -83,6 +83,32 @@ export function initialFX() {
       ease: "power2.out",
       stagger: 0.12,
       delay: 1.1,
+    }
+  );
+
+  gsap.fromTo(
+    [".landing-eyebrow", ".landing-tagline"],
+    { opacity: 0, y: 16 },
+    {
+      opacity: 1,
+      y: 0,
+      duration: 0.9,
+      ease: "power2.out",
+      stagger: 0.1,
+      delay: 0.9,
+    }
+  );
+
+  gsap.fromTo(
+    ".landing-visual",
+    { opacity: 0, scale: 0.92, y: 24 },
+    {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      duration: 1.2,
+      ease: "power3.out",
+      delay: 1.15,
     }
   );
 

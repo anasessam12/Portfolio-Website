@@ -21,8 +21,9 @@ export function setLandingTimeline() {
     },
   });
 
-  tl.to(".landing-container", { y: "22%", duration: 1, ease: "none" }, 0)
-    .to(".landing-container", { opacity: 0, duration: 0.65 }, 0.15)
+  tl.to(".landing-copy", { y: "24%", duration: 1, ease: "none" }, 0)
+    .to(".landing-copy", { opacity: 0, duration: 0.65 }, 0.15)
+    .to(".landing-visual", { y: "10%", scale: 0.96, opacity: 0, duration: 0.9 }, 0)
     .to(".landing-backdrop", { y: "12%", scale: 1.08, duration: 1 }, 0)
     .to(".landing-scroll", { opacity: 0, duration: 0.2 }, 0);
 
@@ -39,6 +40,42 @@ export function setLandingTimeline() {
         scrollTrigger: {
           trigger: ".about-section",
           start: "top 78%",
+          toggleActions: "play none none reverse",
+          invalidateOnRefresh: true,
+        },
+      }
+    );
+
+    gsap.fromTo(
+      ".about-fact",
+      { y: 40, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.8,
+        ease: "power2.out",
+        stagger: 0.1,
+        scrollTrigger: {
+          trigger: ".about-facts",
+          start: "top 82%",
+          toggleActions: "play none none reverse",
+          invalidateOnRefresh: true,
+        },
+      }
+    );
+
+    gsap.fromTo(
+      ".about-highlight",
+      { y: 20, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.6,
+        ease: "power2.out",
+        stagger: 0.06,
+        scrollTrigger: {
+          trigger: ".about-highlights",
+          start: "top 85%",
           toggleActions: "play none none reverse",
           invalidateOnRefresh: true,
         },
