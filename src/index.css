@@ -75,6 +75,12 @@ body {
   margin: auto;
   position: relative;
 }
+/* The scrolling page sits above the fixed 3D laptop layer, so the laptop
+   reads as depth behind the content instead of covering it. */
+#smooth-wrapper {
+  position: relative;
+  z-index: 1;
+}
 .container1 {
   width: var(--cWidth);
   height: var(--vh);

@@ -1,55 +1,102 @@
 import {
-  Component,
   useEffect,
   useMemo,
   useRef,
-  useState,
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, RoundedBox, Sparkles, Text } from "@react-three/drei";
+import { Float, RoundedBox, Text } from "@react-three/drei";
 import * as THREE from "three";
 
 /* ============================================================================
-   Hero 3D — a procedural "developer laptop" with a live typing code screen,
-   floating code tokens and a soft neon glow. Built entirely from primitives +
-   canvas textures so it ships with zero external model/font/HDRI requests.
+   Laptop model — a procedural "developer laptop" with a live typing code
+   screen. Built entirely from primitives + canvas textures so it ships with
+   zero external model/HDRI requests.
+
+   The scene that places it on the page (and moves it while you scroll) lives
+   in ../ScrollLaptop.tsx.
    ============================================================================ */
 
 const FONT_URL = "/fonts/JetBrainsMono-Regular.woff";
 
 /* ---------------------------------------------------------------- snippets */
-const SNIPPETS: string[] = [
-  [
-    `import { Component, signal } from '@angular/core';`,
-    ``,
-    `@Component({`,
-    `  selector: 'app-hero',`,
-    `  template: \`<h1>{{ title() }}</h1>\`,`,
-    `})`,
-    `export class HeroComponent {`,
-    `  title = signal('Anas Essam');`,
-    `}`,
-  ].join("\n"),
-  [
-    `const results$ = fromEvent(input, 'input')`,
-    `  .pipe(`,
-    `    debounceTime(300),`,
-    `    distinctUntilChanged(),`,
-    `    switchMap(q => api.search(q)),`,
-    `    shareReplay({ bufferSize: 1 }),`,
-    `  );`,
-  ].join("\n"),
-  [
-    `export interface Portfolio {`,
-    `  name: string;`,
-    `  role: 'Angular Developer';`,
-    `  focus: 'RTL · SSO · Design Systems';`,
-    `  stack: string[]; // 16+ tools`,
-    `}`,
-  ].join("\n"),
+type Snippet = { file: string; code: string };
+
+export const SNIPPETS: Snippet[] = [
+  {
+    file: "hero.component.ts",
+    code: [
+      `import { Component, signal } from '@angular/core';`,
+      ``,
+      `@Component({`,
+      `  selector: 'app-hero',`,
+      `  template: \`<h1>{{ title() }}</h1>\`,`,
+      `})`,
+      `export class HeroComponent {`,
+      `  title = signal('Anas Essam');`,
+      `}`,
+    ].join("\n"),
+  },
+  {
+    file: "portfolio.model.ts",
+    code: [
+      `export interface Portfolio {`,
+      `  name: string;`,
+      `  role: 'Angular Developer';`,
+      `  focus: 'RTL · SSO · Design Systems';`,
+      `  stack: string[]; // 16+ tools`,
+      `}`,
+    ].join("\n"),
+  },
+  {
+    file: "search.service.ts",
+    code: [
+      `const results$ = fromEvent(input, 'input')`,
+      `  .pipe(`,
+      `    debounceTime(300),`,
+      `    distinctUntilChanged(),`,
+      `    switchMap(q => api.search(q)),`,
+      `    shareReplay({ bufferSize: 1 }),`,
+      `  );`,
+    ].join("\n"),
+  },
+  {
+    file: "career.timeline.ts",
+    code: [
+      `const career = timeline([`,
+      `  { at: 2022, ship: 'first Angular app' },`,
+      `  { at: 2023, ship: 'gov portals · SSO' },`,
+      `  { at: 2024, ship: 'design system' },`,
+      `  { at: 2025, ship: 'offline-first ERP' },`,
+      `]);`,
+    ].join("\n"),
+  },
+  {
+    file: "contact.ts",
+    code: [
+      `async function sayHello() {`,
+      `  await mail.send({`,
+      `    to: 'anasessam211@gmail.com',`,
+      `    subject: 'Let us build something',`,
+      `  });`,
+      `  return 'talk soon';`,
+      `}`,
+    ].join("\n"),
+  },
 ];
+
+/* -------------------------------------------------- external control state */
+/** Which snippet the screen should be typing (set by the scroll controller). */
+let desiredSnippet = 0;
+/** When false the screen stops repainting — saves work while off-screen. */
+let screenAwake = true;
+
+export const setLaptopSnippet = (index: number) => {
+  desiredSnippet = Math.max(0, Math.min(SNIPPETS.length - 1, index));
+};
+export const setLaptopAwake = (awake: boolean) => {
+  screenAwake = awake;
+};
 
 const KEYWORDS = new Set([
   "import", "from", "export", "const", "let", "function", "return", "class",
@@ -165,7 +212,7 @@ function useEditorTexture(): THREE.CanvasTexture {
     // Pre-tokenize each snippet into a flat, offset-addressed stream so the
     // typewriter can address every character globally.
     const flats = SNIPPETS.map((snip) => {
-      const lines = snip.split("\n").map(tokenize);
+      const lines = snip.code.split("\n").map(tokenize);
       let offset = 0;
       const tokens: FlatToken[] = [];
       lines.forEach((spans, line) => {
@@ -175,7 +222,7 @@ function useEditorTexture(): THREE.CanvasTexture {
         });
         offset += 1; // the newline character
       });
-      return { lines, tokens, total: offset };
+      return { lines, tokens, total: offset, file: snip.file };
     });
 
     const W = 820;
@@ -198,17 +245,25 @@ function useEditorTexture(): THREE.CanvasTexture {
       // ~30 fps redraw + texture upload keeps the always-on animation cheap.
       if (now - last < 33) return;
       last = now;
+      if (!screenAwake) return;
+
+      // The scroll controller can request a different snippet — rewind and
+      // retype the new one so each section gets its own code on screen.
+      if (desiredSnippet !== snippetIdx) {
+        snippetIdx = desiredSnippet;
+        visible = 0;
+        hold = 0;
+      }
 
       const flat = flats[snippetIdx];
 
-      // ~30 chars/sec, 2.2s hold at the end of each snippet
+      // ~30 chars/sec, then hold at the end of the snippet
       if (visible < flat.total) {
         visible += 1;
         hold = 0;
-      } else if (hold > 66) {
+      } else if (hold > 90) {
         visible = 0;
         hold = 0;
-        snippetIdx = (snippetIdx + 1) % flats.length;
       } else {
         hold += 1;
       }
@@ -241,7 +296,7 @@ function useEditorTexture(): THREE.CanvasTexture {
       ctx.fillStyle = "rgba(231,227,236,0.55)";
       ctx.font = '500 22px "JetBrains Mono", monospace';
       ctx.textBaseline = "middle";
-      ctx.fillText("portfolio.ts — Angular 21", 128, 31);
+      ctx.fillText(`${flat.file} — Angular 21`, 128, 31);
 
       // gutter divider
       ctx.strokeStyle = "rgba(255,255,255,0.05)";
@@ -422,7 +477,7 @@ function CodeText({
   );
 }
 
-function FloatingTokens({ mobile }: { mobile: boolean }) {
+export function FloatingTokens({ mobile }: { mobile: boolean }) {
   const list = mobile ? TOKENS.slice(0, 3) : TOKENS;
   return (
     <group>
@@ -522,91 +577,30 @@ function Laptop({
   );
 }
 
-/* ------------------------------------------------------------------ scene --- */
-function Rig({ children }: { children: ReactNode }) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame((state) => {
-    const { pointer } = state;
-    if (!ref.current) return;
-    ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, pointer.x * 0.28, 0.05);
-    ref.current.rotation.x = THREE.MathUtils.lerp(ref.current.rotation.x, -pointer.y * 0.16, 0.05);
-  });
-  return <group ref={ref}>{children}</group>;
-}
-
-function Scene({ mobile }: { mobile: boolean }) {
+/**
+ * The laptop, self-contained: builds its own textures and floats gently.
+ * Placement / scroll choreography is the caller's job.
+ */
+export function LaptopModel({ float = true }: { float?: boolean }) {
   const screenTexture = useEditorTexture();
   const keyboardTexture = useKeyboardTexture();
 
-  return (
-    <>
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[4, 6, 5]} intensity={1.6} color="#ffffff" />
-      <directionalLight position={[-5, 2, -3]} intensity={1.1} color="#a855f7" />
-      <pointLight position={[3, 1, 3]} intensity={14} color="#f0a8ff" distance={12} decay={2} />
+  const laptop = (
+    <Laptop screenTexture={screenTexture} keyboardTexture={keyboardTexture} />
+  );
 
-      <Rig>
-        <group position={[0, -1.0, 0]}>
-          <group rotation={[0.04, -0.35, 0]} scale={mobile ? 0.86 : 1}>
-            <Float speed={1.1} rotationIntensity={0.18} floatIntensity={0.6} floatingRange={[-0.08, 0.08]}>
-              <Laptop screenTexture={screenTexture} keyboardTexture={keyboardTexture} />
-            </Float>
-          </group>
-          <FloatingTokens mobile={mobile} />
-          <Sparkles
-            count={mobile ? 24 : 70}
-            scale={[8, 4.5, 4]}
-            size={2.2}
-            speed={0.32}
-            opacity={0.5}
-            color="#c2a4ff"
-          />
-        </group>
-      </Rig>
-    </>
+  return float ? (
+    <Float
+      speed={1.1}
+      rotationIntensity={0.18}
+      floatIntensity={0.6}
+      floatingRange={[-0.08, 0.08]}
+    >
+      {laptop}
+    </Float>
+  ) : (
+    laptop
   );
 }
 
-/* --------------------------------------------------------------- component -- */
-function useIsMobile() {
-  const [mobile, setMobile] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < 900
-  );
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 899px)");
-    const onChange = () => setMobile(mq.matches);
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return mobile;
-}
-
-class GLBoundary extends Component<
-  { children: ReactNode },
-  { failed: boolean }
-> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
-
-export default function Hero3D() {
-  const mobile = useIsMobile();
-  return (
-    <GLBoundary>
-      <Canvas
-        dpr={[1, mobile ? 1.4 : 1.8]}
-        camera={{ position: [0, 0.15, 6.4], fov: 42 }}
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-        style={{ background: "transparent" }}
-      >
-        <Scene mobile={mobile} />
-      </Canvas>
-    </GLBoundary>
-  );
-}
+export default LaptopModel;

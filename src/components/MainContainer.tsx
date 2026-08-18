@@ -11,6 +11,7 @@ import Work from "./Work";
 import setSplitText from "./utils/splitText";
 
 const TechStack = lazy(() => import("./TechStack"));
+const ScrollLaptop = lazy(() => import("./ScrollLaptop"));
 
 const MainContainer = () => {
   const [isDesktopView, setIsDesktopView] = useState<boolean>(
@@ -34,6 +35,11 @@ const MainContainer = () => {
       <Cursor />
       <Navbar />
       <SocialIcons />
+      {isDesktopView && (
+        <Suspense fallback={null}>
+          <ScrollLaptop />
+        </Suspense>
+      )}
       <div id="smooth-wrapper">
         <div id="smooth-content">
           <div className="container-main">

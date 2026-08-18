@@ -152,30 +152,6 @@
   word-break: break-word;
 }
 
-/* ---------- cta ---------- */
-
-.about-cta {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  margin-top: 6px;
-}
-
-.about-cta a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--accentColor);
-  transition: color 0.25s ease;
-}
-
-.about-cta a:hover {
-  color: #fff;
-}
-
 /* ---------- responsive ---------- */
 
 @media only screen and (min-width: 900px) {
@@ -199,9 +175,6 @@
   .about-facts {
     grid-template-columns: 1fr;
     align-self: stretch;
-  }
-  .about-cta {
-    grid-column: auto;
   }
 }
 

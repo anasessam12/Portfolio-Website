@@ -1,22 +1,8 @@
-import { useEffect, useState } from "react";
 import "./styles/Landing.css";
 import { portfolio } from "../data/portfolio";
 import { scrollToSection } from "./utils/smoother";
-import Hero3D from "./Hero3D";
 
 const Landing = () => {
-  const [desktop, setDesktop] = useState(
-    () => typeof window !== "undefined" && window.innerWidth >= 1024
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => setDesktop(mq.matches);
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
   const jumpTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     scrollToSection(id);
@@ -39,11 +25,13 @@ const Landing = () => {
         <div className="landing-copy">
           <div className="landing-eyebrow">
             <span className="landing-eyebrow-dot"></span>
-            {portfolio.title} · {portfolio.location}
+            <span className="landing-eyebrow-text">
+              Available for work · Cairo, Egypt
+            </span>
           </div>
 
           <div className="landing-intro">
-            <h2>Hello! I'm</h2>
+            <h2>Hello, I&apos;m</h2>
             <h1>
               {portfolio.name.first}
               <br />
@@ -52,14 +40,19 @@ const Landing = () => {
           </div>
 
           <div className="landing-info">
-            <h2 className="landing-info-h2">
-              <div className="landing-h2-1">{portfolio.roles[0]}</div>
-              <div className="landing-h2-2">{portfolio.roles[1]}</div>
-            </h2>
-            <h2>
-              <div className="landing-h2-info">{portfolio.roles[0]}</div>
-              <div className="landing-h2-info-1">{portfolio.roles[1]}</div>
-            </h2>
+            <span className="landing-info-rule" aria-hidden="true"></span>
+            {/* Both headings share one grid cell: the masked copy sits behind
+                the crisp one so the role text reads as a soft reflection. */}
+            <div className="landing-info-stack">
+              <h2 className="landing-info-h2">
+                <div className="landing-h2-1">{portfolio.roles[0]}</div>
+                <div className="landing-h2-2">{portfolio.roles[1]}</div>
+              </h2>
+              <h2>
+                <div className="landing-h2-info">{portfolio.roles[0]}</div>
+                <div className="landing-h2-info-1">{portfolio.roles[1]}</div>
+              </h2>
+            </div>
           </div>
 
           <p className="landing-tagline">
@@ -79,7 +72,7 @@ const Landing = () => {
                   d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.8"
+                  strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -98,7 +91,7 @@ const Landing = () => {
           <div className="landing-stats">
             <div className="landing-stat">
               <strong>{years}+</strong>
-              <span>Years building Angular</span>
+              <span>Years with Angular</span>
             </div>
             <div className="landing-stat-sep"></div>
             <div className="landing-stat">
@@ -111,21 +104,17 @@ const Landing = () => {
               <span>Tools in the stack</span>
             </div>
           </div>
-
-          <div className="landing-meta">
-            <div className="landing-meta-item">
-              <span className="landing-meta-dot"></span>
-              Available for work
-            </div>
-            <div className="landing-meta-sep"></div>
-            <div className="landing-meta-item">Cairo, Egypt</div>
-          </div>
         </div>
 
+        {/* Reserves the right column — the 3D laptop lives in the fixed
+            <ScrollLaptop /> layer so it can travel between sections. */}
         <div className="landing-visual" aria-hidden="true">
-          {desktop && <Hero3D />}
-          <div className="landing-visual-chip landing-visual-chip-a">Angular 17–21</div>
-          <div className="landing-visual-chip landing-visual-chip-b">TypeScript · RxJS</div>
+          <div className="landing-visual-chip landing-visual-chip-a">
+            Angular 17–21
+          </div>
+          <div className="landing-visual-chip landing-visual-chip-b">
+            TypeScript · RxJS
+          </div>
         </div>
       </div>
 

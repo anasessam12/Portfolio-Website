@@ -71,10 +71,6 @@ const About = () => {
               </div>
             </div>
           ))}
-
-          <div className="about-cta">
-            <a href={`mailto:${portfolio.email}`}>Let&apos;s work together →</a>
-          </div>
         </div>
       </div>
     </div>

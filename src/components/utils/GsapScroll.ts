@@ -21,10 +21,10 @@ export function setLandingTimeline() {
     },
   });
 
-  tl.to(".landing-copy", { y: "24%", duration: 1, ease: "none" }, 0)
-    .to(".landing-copy", { opacity: 0, duration: 0.65 }, 0.15)
-    .to(".landing-visual", { y: "10%", scale: 0.96, opacity: 0, duration: 0.9 }, 0)
-    .to(".landing-backdrop", { y: "12%", scale: 1.08, duration: 1 }, 0)
+  tl.to(".landing-copy", { y: "18%", duration: 1, ease: "none" }, 0)
+    .to(".landing-copy", { opacity: 0, filter: "blur(6px)", duration: 0.7 }, 0.2)
+    .to(".landing-visual-chip", { y: "-20%", opacity: 0, duration: 0.6 }, 0)
+    .to(".landing-backdrop", { y: "14%", scale: 1.1, duration: 1 }, 0)
     .to(".landing-scroll", { opacity: 0, duration: 0.2 }, 0);
 
   const about = document.querySelector(".about-section");

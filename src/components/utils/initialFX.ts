@@ -14,7 +14,7 @@ export function initialFX() {
   });
 
   const landingText = new SplitText(
-    [".landing-info h3", ".landing-intro h2", ".landing-intro h1"],
+    [".landing-intro h2", ".landing-intro h1"],
     {
       type: "chars,lines",
       linesClass: "split-line",
@@ -22,16 +22,22 @@ export function initialFX() {
   );
   gsap.fromTo(
     landingText.chars,
-    { opacity: 0, y: 80, filter: "blur(5px)" },
+    { opacity: 0, yPercent: 110, filter: "blur(6px)" },
     {
       opacity: 1,
-      duration: 1.2,
+      duration: 1.4,
       filter: "blur(0px)",
-      ease: "power3.inOut",
-      y: 0,
-      stagger: 0.025,
+      ease: "expo.out",
+      yPercent: 0,
+      stagger: 0.022,
       delay: 0.3,
     }
+  );
+
+  gsap.fromTo(
+    ".landing-info-rule",
+    { scaleX: 0, transformOrigin: "left center" },
+    { scaleX: 1, duration: 1.1, ease: "expo.out", delay: 1 }
   );
 
   const TextProps = { type: "chars,lines", linesClass: "split-h2" };
@@ -74,13 +80,13 @@ export function initialFX() {
   );
 
   gsap.fromTo(
-    [".landing-actions", ".landing-stats", ".landing-meta", ".landing-scroll"],
-    { opacity: 0, y: 24 },
+    [".landing-actions", ".landing-stats", ".landing-scroll"],
+    { opacity: 0, y: 22 },
     {
       opacity: 1,
       y: 0,
-      duration: 1,
-      ease: "power2.out",
+      duration: 1.1,
+      ease: "power3.out",
       stagger: 0.12,
       delay: 1.1,
     }
@@ -100,15 +106,16 @@ export function initialFX() {
   );
 
   gsap.fromTo(
-    ".landing-visual",
-    { opacity: 0, scale: 0.92, y: 24 },
+    ".landing-visual-chip",
+    { opacity: 0, y: 18, filter: "blur(6px)" },
     {
       opacity: 1,
-      scale: 1,
       y: 0,
-      duration: 1.2,
+      filter: "blur(0px)",
+      duration: 1.1,
       ease: "power3.out",
-      delay: 1.15,
+      stagger: 0.14,
+      delay: 1.4,
     }
   );
 
